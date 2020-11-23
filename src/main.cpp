@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <vector>
 
+#define DEBUG
+
 #include "mmio.h"
 #include "coo2csc.h"
 #include "randomGraphs.h"
@@ -12,8 +14,6 @@
 #include "v1.h"
 #include "v2.h"
 #include "v3.h"
-
-#define DEBUG
 
 #include "defs.h"
 
@@ -42,13 +42,21 @@ void printMatrixH(uint32_t *a, uint32_t size, char *text) {
     DEBUG_PRINT(("%s: ", text));
     for (int i = 0; i < size; i++)
         DEBUG_PRINT(("%d ", a[i]));
+    DEBUG_PRINT(("\n"));
+}
+
+void printMatrixV(uint32_t *a, uint32_t size, char *text) {
+    DEBUG_PRINT(("------- %s: \n", text));
+    for (int i = 0; i < size; i++)
+        DEBUG_PRINT(("%d: %d\n", i, a[i]));
+    DEBUG_PRINT(("\n"));
 }
 
 int main() {
 
     // char FILEPATH[] = {"../data/ca-GrQc.mtx"};
-    char FILEPATH[] = {"../data/smalltest.mtx"};
-    // char FILEPATH[] = {"../data/testmatrix.mtx"};
+    // char FILEPATH[] = {"../data/smalltest.mtx"};
+    char FILEPATH[] = {"../data/testmatrix.mtx"};
     int M, N, nz;
 
     FILE *f;
@@ -72,18 +80,12 @@ int main() {
         J[i]--;
     }
 
-    printMatrixH(I, nz, "I");
-    printMatrixH(J, nz, "J");
-
     coo2csc(csc_row, csc_col, J, I, nz, N, isOneBased);
 
-    DEBUG_PRINT(("\ncsc_row: "));
-    for (int i = 0; i < nz; i++)
-        DEBUG_PRINT(("%d ", csc_row[i]));
-    DEBUG_PRINT(("\ncsc_col: "));
-    for (int i = 0; i < N + 1; i++)
-        DEBUG_PRINT(("%d ", csc_col[i]));
-    DEBUG_PRINT(("\n"));
+    printMatrixH(I, nz, "I");
+    printMatrixH(J, nz, "J");
+    printMatrixH(csc_row, nz, "csc_row");
+    printMatrixH(csc_col, N + 1, "csc_col");
 
     /* ----------------------- Neighbourhoods of vertices ----------------------- */
 
@@ -123,28 +125,21 @@ int main() {
 
     /* --------------------------------- random --------------------------------- */
 
-    // for (int i = 0; i < N; i++) {
-    //     DEBUG_PRINT(("%d: %d\n", i, c3[i]));
-    // }
+    printMatrixV(c3, N, "c3");
 
-    initRandomGraph(A);
+    initRandomGraph(A, N, N);
 
-    // timerStart();
-    // triangleCountV2(A, RAND_N, RAND_N, c3);
-    // timerEnd();
-    // timerPrint("v2");
+    timerStart();
+    triangleCountV2(A, RAND_N, RAND_N, c3);
+    timerEnd();
+    timerPrint("v2");
 
-    // timerStart();
-    // triangleCountV1(A, RAND_N, RAND_N, c3);
-    // timerEnd();
-    // timerPrint("v1");
+    timerStart();
+    triangleCountV1(A, RAND_N, RAND_N, c3);
+    timerEnd();
+    timerPrint("v1");
 
-    prtarr(A);
-
-    // DEBUG_PRINT(("\n"));
-    // for (int i = 0; i < n; i++) {
-    //     DEBUG_PRINT(("%d ", c3[i]));
-    // }
+    prtarr(A, N, N);
 
     return 0;
 }
