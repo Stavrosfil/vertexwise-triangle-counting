@@ -22,13 +22,11 @@
 
 using namespace std;
 
-bool A[RAND_N][RAND_N];
-FILE *f;
-
 int main() {
 
     int M, N, nz;
     int triangles = 0;
+    bool A[RAND_N][RAND_N];
 
     FILE *f;
 
