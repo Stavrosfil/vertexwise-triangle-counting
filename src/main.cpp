@@ -3,23 +3,22 @@
 #include <stdlib.h>
 #include <vector>
 
-// #define DEBUG
-#define FILEPATH "../data/ca-GrQc.mtx"
-// #define FILEPATH "../data/as-Skitter.mtx"
-// #define FILEPATH "../data/bus.mtx"
-// #define FILEPATH "../data/smalltest.mtx"
-// #define FILEPATH "../data/testmatrix.mtx"
+#define DEBUG
+#define FILEPATH "data/ca-GrQc.mtx"
+// #define FILEPATH "data/as-Skitter.mtx"
+// #define FILEPATH "data/smalltest.mtx"
+#define FILEPATH "data/testmatrix.mtx"
 
-#include "defs.h"
+#include "../include/defs.h"
 
-#include "mmio.h"
-#include "coo2csc.h"
-#include "helpers.h"
-#include "timerHelpers.h"
+#include "../include/mmio.h"
+#include "../include/coo2csc.h"
+#include "../include/helpers.h"
+#include "../include/timerHelpers.h"
 
-#include "v1.h"
-#include "v2.h"
-#include "v3.h"
+#include "../include/v1.h"
+#include "../include/v2.h"
+#include "../include/v3.h"
 
 using namespace std;
 
@@ -33,10 +32,14 @@ int main() {
 
     FILE *f;
 
-    if ((f = fopen(FILEPATH, "r")) == NULL)
+    if ((f = fopen(FILEPATH, "r")) == NULL) {
+        printf("File does not exist.\nExiting...");
         exit(1);
-    if (mm_read_mtx_crd_size(f, &M, &N, &nz) != 0)
+    }
+    if (mm_read_mtx_crd_size(f, &M, &N, &nz) != 0) {
+        printf("Failed to read matrix properties.\nExiting...");
         exit(1);
+    }
     DEBUG_PRINT(("M: %d, N: %d, nz: %d\n", M, N, nz));
 
     uint32_t *I         = (uint32_t *)malloc(nz * sizeof(uint32_t));
