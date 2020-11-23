@@ -1,63 +1,35 @@
 #include <cstdio>
 #include <iostream>
 #include <stdlib.h>
-#include <time.h>
-#include <stdint.h>
 #include <vector>
 
-#define DEBUG
+// #define DEBUG
+#define FILEPATH "../data/ca-GrQc.mtx"
+// #define FILEPATH "../data/as-Skitter.mtx"
+// #define FILEPATH "../data/bus.mtx"
+// #define FILEPATH "../data/smalltest.mtx"
+// #define FILEPATH "../data/testmatrix.mtx"
+
+#include "defs.h"
 
 #include "mmio.h"
 #include "coo2csc.h"
-#include "randomGraphs.h"
+#include "helpers.h"
+#include "timerHelpers.h"
 
 #include "v1.h"
 #include "v2.h"
 #include "v3.h"
 
-#include "defs.h"
-
 using namespace std;
 
-/* -------------------------------- VARIABLES ------------------------------- */
 bool A[RAND_N][RAND_N];
-struct timespec ts_start;
-struct timespec ts_end;
 FILE *f;
-
-/* ------------------------------------ - ----------------------------------- */
-
-double totalTime(timespec start, timespec end) {
-    double time_taken;
-    time_taken = (end.tv_sec - start.tv_sec) * 1e9;
-    time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
-    return time_taken;
-}
-
-void timerStart() { clock_gettime(CLOCK_MONOTONIC, &ts_start); }
-void timerEnd() { clock_gettime(CLOCK_MONOTONIC, &ts_end); }
-void timerPrint(char *argv) { printf("Time to run %s: [%lf]s\n", argv, totalTime(ts_start, ts_end)); }
-
-void printMatrixH(uint32_t *a, uint32_t size, char *text) {
-    DEBUG_PRINT(("%s: ", text));
-    for (int i = 0; i < size; i++)
-        DEBUG_PRINT(("%d ", a[i]));
-    DEBUG_PRINT(("\n"));
-}
-
-void printMatrixV(uint32_t *a, uint32_t size, char *text) {
-    DEBUG_PRINT(("------- %s: \n", text));
-    for (int i = 0; i < size; i++)
-        DEBUG_PRINT(("%d: %d\n", i, a[i]));
-    DEBUG_PRINT(("\n"));
-}
 
 int main() {
 
-    // char FILEPATH[] = {"../data/ca-GrQc.mtx"};
-    // char FILEPATH[] = {"../data/smalltest.mtx"};
-    char FILEPATH[] = {"../data/testmatrix.mtx"};
     int M, N, nz;
+    int triangles = 0;
 
     FILE *f;
 
@@ -89,8 +61,6 @@ int main() {
 
     /* ----------------------- Neighbourhoods of vertices ----------------------- */
 
-    int cnt = 0;
-
     timerStart();
     for (int i = 1; i < N - 1; i++) {
         for (int j = i + 1; j < N; j++) {
@@ -108,11 +78,10 @@ int main() {
                         c1++;
                     }
                     if (c1 == 2) {
-                        cnt++;
+                        triangles++;
                         c3[i]++;
                         c3[j]++;
                         c3[csc_row[k]]++;
-                        // printf("%d %d %d %d %d %d\n", i, j, csc_row[k], csc_row[l], k, l);
                         break;
                     }
                 }
@@ -121,13 +90,14 @@ int main() {
     }
     timerEnd();
     timerPrint("v3");
-    DEBUG_PRINT(("Triangles: %d\n", cnt));
+    // DEBUG_PRINT(("Triangles: %d\n", triangles));
+    printf("Triangles: %d\n", triangles);
 
     /* --------------------------------- random --------------------------------- */
 
     printMatrixV(c3, N, "c3");
 
-    initRandomGraph(A, N, N);
+    initRandomGraph(A, RAND_N, RAND_N);
 
     timerStart();
     triangleCountV2(A, RAND_N, RAND_N, c3);
@@ -139,7 +109,7 @@ int main() {
     timerEnd();
     timerPrint("v1");
 
-    prtarr(A, N, N);
+    printMatrix2Dims(A, RAND_N, RAND_N);
 
     return 0;
 }
