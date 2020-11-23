@@ -13,4 +13,5 @@ double totalTime(timespec start, timespec end) {
 
 void timerStart() { clock_gettime(CLOCK_MONOTONIC, &ts_start); }
 void timerEnd() { clock_gettime(CLOCK_MONOTONIC, &ts_end); }
-void timerPrint(char *argv) { DEBUG_PRINT(("Time to run %s: [%lf]s\n", argv, totalTime(ts_start, ts_end))); }
+// void timerPrint(char *argv) { DEBUG_PRINT(("Time to run %s: [%lf]s\n", argv, totalTime(ts_start, ts_end))); }
+void timerPrint(char argv[]) { printf("Time to run %s: [%lf]s\n", argv, totalTime(ts_start, ts_end)); }
