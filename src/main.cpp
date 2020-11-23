@@ -3,54 +3,30 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdint.h>
-#include <set>
 #include <vector>
 
-// #include "convert.h"
-// #include "readMatrix.h"
+#include "mmio.h"
+#include "coo2csc.h"
+#include "randomGraphs.h"
 
 #include "v1.h"
 #include "v2.h"
 #include "v3.h"
 
-#include "mmio.h"
-#include "coo2csc.h"
-
 #define DEBUG
-// #define n 1000
-// #define n 10
 
 #include "defs.h"
 
 using namespace std;
 
 /* -------------------------------- VARIABLES ------------------------------- */
-
-// bool A[n][n];
+bool A[RAND_N][RAND_N];
 struct timespec ts_start;
 struct timespec ts_end;
 FILE *f;
 
 /* ------------------------------------ - ----------------------------------- */
 
-// void prtarr(bool arr[n][n]) {
-//     for (int i = 0; i < n; i++) {
-//         for (int j = 0; j < n; j++)
-//             DEBUG_PRINT(("%d ", arr[i][j]));
-//         DEBUG_PRINT(("\n"));
-//     }
-// }
-// void initRandomGraph(bool A[n][n]) {
-//     srandom(time(NULL));
-//     for (int i = 0; i < n; i++) {
-//         for (int j = i + 1; j < n; j++) {
-//             // Check if an IF is faster (if random() & 1 => A[i][j] = 1 etc)
-//             bool r  = random() & 1;
-//             A[i][j] = r;
-//             A[j][i] = r;
-//         }
-//     }
-// }
 double totalTime(timespec start, timespec end) {
     double time_taken;
     time_taken = (end.tv_sec - start.tv_sec) * 1e9;
@@ -58,10 +34,21 @@ double totalTime(timespec start, timespec end) {
     return time_taken;
 }
 
-// https://medium.com/swlh/an-in-depth-introduction-to-sparse-matrix-a5972d7e8c86
+void timerStart() { clock_gettime(CLOCK_MONOTONIC, &ts_start); }
+void timerEnd() { clock_gettime(CLOCK_MONOTONIC, &ts_end); }
+void timerPrint(char *argv) { printf("Time to run %s: [%lf]s\n", argv, totalTime(ts_start, ts_end)); }
+
+void printMatrixH(uint32_t *a, uint32_t size, char *text) {
+    DEBUG_PRINT(("%s: ", text));
+    for (int i = 0; i < size; i++)
+        DEBUG_PRINT(("%d ", a[i]));
+}
+
 int main() {
 
-    char FILEPATH[] = {"../data/ca-GrQc.mtx"};
+    // char FILEPATH[] = {"../data/ca-GrQc.mtx"};
+    char FILEPATH[] = {"../data/smalltest.mtx"};
+    // char FILEPATH[] = {"../data/testmatrix.mtx"};
     int M, N, nz;
 
     FILE *f;
@@ -85,12 +72,8 @@ int main() {
         J[i]--;
     }
 
-    DEBUG_PRINT(("I: "));
-    for (int i = 0; i < nz; i++)
-        DEBUG_PRINT(("%d ", I[i]));
-    DEBUG_PRINT(("\nJ: "));
-    for (int i = 0; i < nz; i++)
-        DEBUG_PRINT(("%d ", J[i]));
+    printMatrixH(I, nz, "I");
+    printMatrixH(J, nz, "J");
 
     coo2csc(csc_row, csc_col, J, I, nz, N, isOneBased);
 
@@ -103,96 +86,65 @@ int main() {
     DEBUG_PRINT(("\n"));
 
     /* ----------------------- Neighbourhoods of vertices ----------------------- */
-    set<int>::iterator itr;
-    vector<set<int>> nbh(N);
-
-    clock_gettime(CLOCK_MONOTONIC, &ts_start);
-    for (int i = 0; i < N; i++) {
-        int s1 = csc_col[i];
-        int s2 = csc_col[i + 1];
-        // cout << "Slice: [" << s1 << ":" << s2 << "]" << endl;
-        nbh[i] = set<int>(csc_row + s1, csc_row + s2);
-    }
-    clock_gettime(CLOCK_MONOTONIC, &ts_end);
-    printf("\nTime to run: %lfs", totalTime(ts_start, ts_end));
 
     int cnt = 0;
 
-    clock_gettime(CLOCK_MONOTONIC, &ts_start);
+    timerStart();
     for (int i = 1; i < N - 1; i++) {
-        set<int> i_nodes = nbh[i];
-        itr              = i_nodes.begin();
+        for (int j = i + 1; j < N; j++) {
+            int si1, si2, sj1, sj2;
+            si1 = csc_col[i];
+            si2 = csc_col[i + 1];
+            sj1 = csc_col[j];
+            sj2 = csc_col[j + 1];
 
-        for (itr = i_nodes.begin(); itr != i_nodes.end(); ++itr) {
-            for (int j = i + 1; j < N; j++) {
-                const bool is_in  = nbh[j].find(*itr) != nbh[j].end();
-                const bool is_in2 = nbh[j].find(i) != nbh[j].end();
-                if (is_in && is_in2)
-                    cnt++;
-                // printf("triangle\n");
-                // c3[i]++;
-                // c3[j]++;
-                // c3[*itr]++;
+            // Find common subset
+            for (int k = si1; k < si2; k++) {
+                int c1 = 0;
+                for (int l = sj1; l < sj2; l++) {
+                    if (i == csc_row[l] || csc_row[k] == csc_row[l]) {
+                        c1++;
+                    }
+                    if (c1 == 2) {
+                        cnt++;
+                        c3[i]++;
+                        c3[j]++;
+                        c3[csc_row[k]]++;
+                        // printf("%d %d %d %d %d %d\n", i, j, csc_row[k], csc_row[l], k, l);
+                        break;
+                    }
+                }
             }
         }
     }
-    clock_gettime(CLOCK_MONOTONIC, &ts_end);
-
-    printf("\n%d", cnt);
-
-    // Create list of sets
-    // for (int i = N - 1; i >= 0; i--) {
-    //     int s1 = csc_col[i];
-    //     int s2 = csc_col[i + 1];
-    //     cout << "Slice: [" << s1 << ":" << s2 << "]" << endl;
-    //     // nbh[i] = set<int>(csc_row + s1, csc_row + s2);
-    //     for (int j = s1; j < s2; j++) {
-    //         int node = csc_row[j];
-    //         cout << "Node: " << node << endl;
-    //         for (int k = csc_col[node]; k < csc_col[node + 1]; k++) {
-    //             int node2 = csc_row[k];
-    //             cout << "Node2: " << node2 << endl;
-    //             if (node == node2) {
-    //                 printf("Triangle");
-    //                 // c3[i]++;
-    //                 // c3[j]++;
-    //                 // c3[k]++;
-    //             }
-    //         }
-    //     }
-    // }
-
-    // for (int i = 0; i < N; i++) {
-    // DEBUG_PRINT(("%d: %d\n", i, c3[i]));
-    // }
-
-    /* -------------------------------- print set ------------------------------- */
-
-    // for (int i = 0; i < N; i++) {
-    //     set<int> s = nbh[i];
-    //     if (s.empty())
-    //         cout << "Empty set";
-    //     else
-    //         for (itr = s.begin(); itr != s.end(); ++itr)
-    //             cout << *itr << ',';
-    //     cout << endl;
-    // }
+    timerEnd();
+    timerPrint("v3");
+    DEBUG_PRINT(("Triangles: %d\n", cnt));
 
     /* --------------------------------- random --------------------------------- */
 
-    // initRandomGraph();
+    // for (int i = 0; i < N; i++) {
+    //     DEBUG_PRINT(("%d: %d\n", i, c3[i]));
+    // }
 
-    // clock_gettime(CLOCK_MONOTONIC, &ts_start);
-    // triangleCountV2(A, n, n, c3);
-    // clock_gettime(CLOCK_MONOTONIC, &ts_end);
+    initRandomGraph(A);
 
-    // prtarr(A);
+    // timerStart();
+    // triangleCountV2(A, RAND_N, RAND_N, c3);
+    // timerEnd();
+    // timerPrint("v2");
+
+    // timerStart();
+    // triangleCountV1(A, RAND_N, RAND_N, c3);
+    // timerEnd();
+    // timerPrint("v1");
+
+    prtarr(A);
+
     // DEBUG_PRINT(("\n"));
     // for (int i = 0; i < n; i++) {
     //     DEBUG_PRINT(("%d ", c3[i]));
     // }
-
-    printf("\nTime to run: %lfs", totalTime(ts_start, ts_end));
 
     return 0;
 }

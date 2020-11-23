@@ -1,4 +1,4 @@
-void triangleCountV1(void *A, int n, int m, int *c3) {
+void triangleCountV1(void *A, int n, int m, uint32_t *c3) {
     bool *a = (bool *)A;
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++)
