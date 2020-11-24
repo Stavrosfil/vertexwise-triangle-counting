@@ -2,6 +2,8 @@
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
+#include <cilk/cilk.h>
+#include <cilk/reducer_opadd.h> //needs to be included to use the addition reducer
 
 // #define DEBUG
 #define FILEPATH "data/ca-GrQc.mtx"
@@ -19,15 +21,31 @@
 #include "../include/v1.h"
 #include "../include/v2.h"
 #include "../include/v3.h"
+#include "v3_cilk.h"
 
 using namespace std;
-
 bool A[RAND_N][RAND_N];
+
+void randomGraph(uint32_t *c3) {
+    initRandomGraph(A, RAND_N, RAND_N);
+
+    timerStart();
+    triangleCountV2(A, RAND_N, RAND_N, c3);
+    timerEnd();
+    timerPrint("v2");
+
+    timerStart();
+    triangleCountV1(A, RAND_N, RAND_N, c3);
+    timerEnd();
+    timerPrint("v1");
+
+    printMatrix2Dims(A, RAND_N, RAND_N);
+}
 
 int main() {
 
     int M, N, nz;
-    int triangles = 0;
+    uint32_t triangles = 0;
 
     FILE *f;
 
@@ -64,27 +82,11 @@ int main() {
     /* ----------------------- Neighbourhoods of vertices ----------------------- */
 
     timerStart();
-    triangles = triangleCountV3(N, csc_col, csc_row, c3);
+    triangles = triangleCountV3Cilk(N, csc_col, csc_row, c3);
     timerEnd();
     timerPrint((char *)"v3");
     printf("Triangles: %d\n", triangles);
     printMatrixV(c3, N, (char *)"c3");
-
-    /* --------------------------------- random --------------------------------- */
-
-    // initRandomGraph(A, RAND_N, RAND_N);
-
-    // timerStart();
-    // triangleCountV2(A, RAND_N, RAND_N, c3);
-    // timerEnd();
-    // timerPrint("v2");
-
-    // timerStart();
-    // triangleCountV1(A, RAND_N, RAND_N, c3);
-    // timerEnd();
-    // timerPrint("v1");
-
-    // printMatrix2Dims(A, RAND_N, RAND_N);
 
     return 0;
 }
