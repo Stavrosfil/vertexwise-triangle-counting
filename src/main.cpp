@@ -3,13 +3,15 @@
 #include <stdlib.h>
 #include <vector>
 #include <cilk/cilk.h>
-#include <cilk/reducer_opadd.h> //needs to be included to use the addition reducer
 
 // #define DEBUG
 #define FILEPATH "data/ca-GrQc.mtx"
+// #define FILEPATH "data/ca-AstroPh.mtx"
+// #define FILEPATH "data/dblp-2010.mtx"
 // #define FILEPATH "data/as-Skitter.mtx"
-// #define FILEPATH "data/smalltest.mtx"
+// #define FILEPATH "data/loc-gowalla_edges.mtx"
 // #define FILEPATH "data/testmatrix.mtx"
+// #define FILEPATH "data/smalltest.mtx"
 
 #include "../include/defs.h"
 
@@ -61,32 +63,32 @@ int main() {
 
     uint32_t *I         = (uint32_t *)malloc(nz * sizeof(uint32_t));
     uint32_t *J         = (uint32_t *)malloc(nz * sizeof(uint32_t));
-    uint32_t *csc_row   = (uint32_t *)malloc(nz * sizeof(uint32_t));
-    uint32_t *csc_col   = (uint32_t *)malloc((N + 1) * sizeof(uint32_t));
+    uint32_t *csr_col   = (uint32_t *)malloc(nz * sizeof(uint32_t));
+    uint32_t *csr_row   = (uint32_t *)malloc((N + 1) * sizeof(uint32_t));
     uint32_t *c3        = (uint32_t *)calloc(N, sizeof(uint32_t));
-    uint32_t isOneBased = 0;
+    uint32_t isOneBased = 1;
 
     for (int i = 0; i < nz; i++) {
         fscanf(f, "%d %d\n", &I[i], &J[i]);
-        I[i]--;
-        J[i]--;
+        // I[i]--;
+        // J[i]--;
     }
 
-    coo2csc(csc_row, csc_col, J, I, nz, N, isOneBased);
+    coo2csc(csr_col, csr_row, I, J, nz, N, isOneBased);
 
     printMatrixH(I, nz, (char *)"I");
     printMatrixH(J, nz, (char *)"J");
-    printMatrixH(csc_row, nz, (char *)"csc_row");
-    printMatrixH(csc_col, N + 1, (char *)"csc_col");
+    printMatrixH(csr_col, nz, (char *)"csr_col");
+    printMatrixH(csr_row, N + 1, (char *)"csr_row");
 
     /* ----------------------- Neighbourhoods of vertices ----------------------- */
 
     timerStart();
-    triangles = triangleCountV3Cilk(N, csc_col, csc_row, c3);
+    triangles = triangleCountV3Cilk(N, csr_row, csr_col, c3);
     timerEnd();
-    timerPrint((char *)"v3");
+    timerPrint((char *)"v3-cilk");
     printf("Triangles: %d\n", triangles);
-    printMatrixV(c3, N, (char *)"c3");
+    // printMatrixV(c3, N, (char *)"c3");
 
     return 0;
 }
