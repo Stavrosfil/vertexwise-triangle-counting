@@ -3,11 +3,16 @@
 #include <stdlib.h>
 #include <vector>
 
-#define DEBUG
-#define FILEPATH "data/ca-GrQc.mtx"
-// #define FILEPATH "data/as-Skitter.mtx"
+// #define DEBUG
+#define FILEPATH "data/as-Skitter.mtx"
+// #define FILEPATH "data/ca-AstroPh.mtx"
+// #define FILEPATH "data/ca-GrQc.mtx"
+// #define FILEPATH "data/dblp-2010.mtx"
+// #define FILEPATH "data/delaunay_n19.mtx"
+// #define FILEPATH "data/loc-gowalla_edges.mtx"
+// #define FILEPATH "data/roadNet-CA.mtx"
 // #define FILEPATH "data/smalltest.mtx"
-#define FILEPATH "data/testmatrix.mtx"
+// #define FILEPATH "data/testmatrix.mtx"
 
 #include "../include/defs.h"
 
@@ -18,15 +23,32 @@
 
 #include "../include/v1.h"
 #include "../include/v2.h"
-#include "../include/v3.h"
+#include "../include/v3_openmp.h"
+// #include "../include/v3.h"
+// #include "../include/v3_cilk.h"
 
 using namespace std;
+bool A[RAND_N][RAND_N];
+
+void randomGraph(uint32_t *c3) {
+    initRandomGraph(A, RAND_N, RAND_N);
+
+    timerStart();
+    triangleCountV2(A, RAND_N, RAND_N, c3);
+    timerEnd();
+    timerPrint("v2");
+
+    timerStart();
+    triangleCountV1(A, RAND_N, RAND_N, c3);
+    timerEnd();
+    timerPrint("v1");
+
+    printMatrix2Dims(A, RAND_N, RAND_N);
+}
 
 int main() {
 
     int M, N, nz;
-    int triangles = 0;
-    bool A[RAND_N][RAND_N];
 
     FILE *f;
 
@@ -42,75 +64,36 @@ int main() {
 
     uint32_t *I         = (uint32_t *)malloc(nz * sizeof(uint32_t));
     uint32_t *J         = (uint32_t *)malloc(nz * sizeof(uint32_t));
-    uint32_t *csc_row   = (uint32_t *)malloc(nz * sizeof(uint32_t));
-    uint32_t *csc_col   = (uint32_t *)malloc((N + 1) * sizeof(uint32_t));
+    uint32_t *csr_col   = (uint32_t *)malloc(nz * sizeof(uint32_t));
+    uint32_t *csr_row   = (uint32_t *)malloc((N + 1) * sizeof(uint32_t));
     uint32_t *c3        = (uint32_t *)calloc(N, sizeof(uint32_t));
-    uint32_t isOneBased = 0;
+    uint32_t isOneBased = 1;
 
-    for (int i = 0; i < nz; i++) {
+    for (int i = 0; i < nz; i++)
         fscanf(f, "%d %d\n", &I[i], &J[i]);
-        I[i]--;
-        J[i]--;
-    }
 
-    coo2csc(csc_row, csc_col, J, I, nz, N, isOneBased);
+    coo2csc(csr_col, csr_row, I, J, nz, N, isOneBased);
 
-    printMatrixH(I, nz, "I");
-    printMatrixH(J, nz, "J");
-    printMatrixH(csc_row, nz, "csc_row");
-    printMatrixH(csc_col, N + 1, "csc_col");
+    printMatrixH(I, nz, (char *)"I");
+    printMatrixH(J, nz, (char *)"J");
+    printMatrixH(csr_col, nz, (char *)"csr_col");
+    printMatrixH(csr_row, N + 1, (char *)"csr_row");
 
-    /* ----------------------- Neighbourhoods of vertices ----------------------- */
+    // timerStart();
+    // // triangles = triangleCountV3Cilk(N, csr_row, csr_col, c3);
+    // triangles = triangleCountV3(N, csr_row, csr_col, c3);
+    // timerEnd();
+    // timerPrint((char *)"v3-serial");
 
-    timerStart();
-    for (int i = 1; i < N - 1; i++) {
-        for (int j = i + 1; j < N; j++) {
-            int si1, si2, sj1, sj2;
-            si1 = csc_col[i];
-            si2 = csc_col[i + 1];
-            sj1 = csc_col[j];
-            sj2 = csc_col[j + 1];
-
-            // Find common subset
-            for (int k = si1; k < si2; k++) {
-                int c1 = 0;
-                for (int l = sj1; l < sj2; l++) {
-                    if (i == csc_row[l] || csc_row[k] == csc_row[l]) {
-                        c1++;
-                    }
-                    if (c1 == 2) {
-                        triangles++;
-                        c3[i]++;
-                        c3[j]++;
-                        c3[csc_row[k]]++;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    timerEnd();
-    timerPrint("v3");
-    // DEBUG_PRINT(("Triangles: %d\n", triangles));
-    printf("Triangles: %d\n", triangles);
-
-    /* --------------------------------- random --------------------------------- */
-
-    printMatrixV(c3, N, "c3");
-
-    initRandomGraph(A, RAND_N, RAND_N);
+    uint32_t triangles = 0;
 
     timerStart();
-    triangleCountV2(A, RAND_N, RAND_N, c3);
+    triangles = triangleCountV3OpenMP(N, csr_row, csr_col, c3);
     timerEnd();
-    timerPrint("v2");
+    timerPrint((char *)"v3-openmp");
 
-    timerStart();
-    triangleCountV1(A, RAND_N, RAND_N, c3);
-    timerEnd();
-    timerPrint("v1");
-
-    printMatrix2Dims(A, RAND_N, RAND_N);
+    printf("Triangles: %u\n", triangles);
+    printMatrixV(c3, N, (char *)"c3");
 
     return 0;
 }
