@@ -2,16 +2,17 @@
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
-#include <cilk/cilk.h>
 
 // #define DEBUG
-#define FILEPATH "data/ca-GrQc.mtx"
+#define FILEPATH "data/as-Skitter.mtx"
 // #define FILEPATH "data/ca-AstroPh.mtx"
+// #define FILEPATH "data/ca-GrQc.mtx"
 // #define FILEPATH "data/dblp-2010.mtx"
-// #define FILEPATH "data/as-Skitter.mtx"
+// #define FILEPATH "data/delaunay_n19.mtx"
 // #define FILEPATH "data/loc-gowalla_edges.mtx"
-// #define FILEPATH "data/testmatrix.mtx"
+// #define FILEPATH "data/roadNet-CA.mtx"
 // #define FILEPATH "data/smalltest.mtx"
+// #define FILEPATH "data/testmatrix.mtx"
 
 #include "../include/defs.h"
 
@@ -22,8 +23,9 @@
 
 #include "../include/v1.h"
 #include "../include/v2.h"
-#include "../include/v3.h"
-#include "v3_cilk.h"
+#include "../include/v3_openmp.h"
+// #include "../include/v3.h"
+// #include "../include/v3_cilk.h"
 
 using namespace std;
 bool A[RAND_N][RAND_N];
@@ -47,7 +49,6 @@ void randomGraph(uint32_t *c3) {
 int main() {
 
     int M, N, nz;
-    uint32_t triangles = 0;
 
     FILE *f;
 
@@ -68,11 +69,8 @@ int main() {
     uint32_t *c3        = (uint32_t *)calloc(N, sizeof(uint32_t));
     uint32_t isOneBased = 1;
 
-    for (int i = 0; i < nz; i++) {
+    for (int i = 0; i < nz; i++)
         fscanf(f, "%d %d\n", &I[i], &J[i]);
-        // I[i]--;
-        // J[i]--;
-    }
 
     coo2csc(csr_col, csr_row, I, J, nz, N, isOneBased);
 
@@ -81,14 +79,21 @@ int main() {
     printMatrixH(csr_col, nz, (char *)"csr_col");
     printMatrixH(csr_row, N + 1, (char *)"csr_row");
 
-    /* ----------------------- Neighbourhoods of vertices ----------------------- */
+    // timerStart();
+    // // triangles = triangleCountV3Cilk(N, csr_row, csr_col, c3);
+    // triangles = triangleCountV3(N, csr_row, csr_col, c3);
+    // timerEnd();
+    // timerPrint((char *)"v3-serial");
+
+    uint32_t triangles = 0;
 
     timerStart();
-    triangles = triangleCountV3Cilk(N, csr_row, csr_col, c3);
+    triangles = triangleCountV3OpenMP(N, csr_row, csr_col, c3);
     timerEnd();
-    timerPrint((char *)"v3-cilk");
-    printf("Triangles: %d\n", triangles);
-    // printMatrixV(c3, N, (char *)"c3");
+    timerPrint((char *)"v3-openmp");
+
+    printf("Triangles: %u\n", triangles);
+    printMatrixV(c3, N, (char *)"c3");
 
     return 0;
 }
