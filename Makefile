@@ -2,7 +2,7 @@ CC=g++
 MPICC=mpicc
 CILKCC=/usr/local/OpenCilk-9.0.1-Linux/bin/clang++
 CFLAGS=-O3 -w
-BUILD_DIR=build/
+BUILD_DIR=build
 
 default: all
 

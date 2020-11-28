@@ -38,3 +38,21 @@ void initRandomGraph(void *arr, int n, int m) {
         }
     }
 }
+
+// bool A[RAND_N][RAND_N];
+
+// void randomGraph(uint32_t *c3) {
+//     initRandomGraph(A, RAND_N, RAND_N);
+
+//     timerStart();
+//     triangleCountV2(A, RAND_N, RAND_N, c3);
+//     timerEnd();
+//     timerPrint("v2");
+
+//     timerStart();
+//     triangleCountV1(A, RAND_N, RAND_N, c3);
+//     timerEnd();
+//     timerPrint("v1");
+
+//     printMatrix2Dims(A, RAND_N, RAND_N);
+// }
