@@ -5,13 +5,15 @@
 
 #define DEBUG
 // #define FILEPATH "data/as-Skitter.mtx"
-#define FILEPATH "data/ca-AstroPh.mtx"
+#define FILEPATH "data/belgium_osm.mtx"
+// #define FILEPATH "data/ca-AstroPh.mtx"
 // #define FILEPATH "data/ca-GrQc.mtx"
+#define FILEPATH "data/com-Youtube.mtx"
 // #define FILEPATH "data/dblp-2010.mtx"
 // #define FILEPATH "data/delaunay_n19.mtx"
 // #define FILEPATH "data/roadNet-CA.mtx"
-#define FILEPATH "data/smalltest.mtx"
-// #define FILEPATH "data/testmatrix.mtx"
+// #define FILEPATH "data/smalltest.mtx"
+#define FILEPATH "data/testmatrix.mtx"
 
 #include "../include/defs.h"
 
@@ -30,6 +32,18 @@
 
 using namespace std;
 
+int compare(const void *a, const void *b) {
+    int int_a = *((int *)a);
+    int int_b = *((int *)b);
+
+    if (int_a == int_b)
+        return 0;
+    else if (int_a < int_b)
+        return -1;
+    else
+        return 1;
+}
+
 int main() {
 
     int M, N, nz;
@@ -46,6 +60,8 @@ int main() {
     }
     DEBUG_PRINT(("M: %d, N: %d, nz: %d\n", M, N, nz));
 
+    // nz *= 2;
+
     uint32_t *I           = (uint32_t *)malloc(nz * sizeof(uint32_t));
     uint32_t *J           = (uint32_t *)malloc(nz * sizeof(uint32_t));
     uint32_t *csr_col     = (uint32_t *)malloc(nz * sizeof(uint32_t));
@@ -53,52 +69,58 @@ int main() {
     uint32_t *c3          = (uint32_t *)calloc(N, sizeof(uint32_t));
     uint32_t isOneBased   = 1;
 
-    // uint32_t *csc_row     = (uint32_t *)malloc(nz * sizeof(uint32_t));
-    // uint32_t *csc_col_ptr = (uint32_t *)malloc((N + 1) * sizeof(uint32_t));
+    uint32_t *csc_row     = (uint32_t *)malloc(nz * sizeof(uint32_t));
+    uint32_t *csc_col_ptr = (uint32_t *)malloc((N + 1) * sizeof(uint32_t));
 
-    for (int i = 0; i < nz; i++)
+    for (int i = 0; i < nz; i++) {
         fscanf(f, "%d %d\n", &I[i], &J[i]);
+        // I[i + 1] = J[i];
+        // J[i + 1] = I[i];
+        // i++;
+    }
 
     coo2csc(csr_col, csr_row_ptr, I, J, nz, N, isOneBased);
-    // coo2csc(csc_row, csc_col_ptr, J, I, nz, N, isOneBased);
+    coo2csc(csc_row, csc_col_ptr, J, I, nz, N, isOneBased);
+
+    // for (int i = 0; i < N; i++) {
+    // qsort((csr_col + csr_row_ptr[i]), csr_row_ptr[i + 1] - csr_row_ptr[i], sizeof(uint32_t), compare);
+    // qsort((csc_row + csc_col_ptr[i]), csc_col_ptr[i + 1] - csc_col_ptr[i], sizeof(uint32_t), compare);
+    // }
+    // int ccc = 0;
+    // for (int i = 0; i < N; i++) {
+    //     printf("%d -> ", i);
+    //     for (int j = csr_row_ptr[i]; j < csr_row_ptr[i + 1]; j++) {
+    //         // if (csr_col[j] < i) {
+    //         printf("%d ", csr_col[j]);
+    //         ccc++;
+    //         // }
+    //     }
+    //     printf("\n");
+    // }
+    // printf("%d\n", ccc);
 
     printMatrixH(I, nz, (char *)"I");
     printMatrixH(J, nz, (char *)"J");
     printMatrixH(csr_col, nz, (char *)"csr_col");
     printMatrixH(csr_row_ptr, N + 1, (char *)"csr_row_ptr");
-    // printMatrixH(csc_row, nz, (char *)"csc_row");
-    // printMatrixH(csc_col_ptr, N + 1, (char *)"csc_col_ptr");
+
+    printMatrixH(csc_row, nz, (char *)"csc_row");
+    printMatrixH(csc_col_ptr, N + 1, (char *)"csc_col_ptr");
 
     uint32_t triangles = 0;
 
-    bool A[4][4] = {0};
-    initRandomGraph(A, 4, 4);
-    uint32_t V[4]   = {0};
-    uint32_t out[4] = {0};
-    for (int i = 0; i < 4; i++) {
-        V[i] = random() & 1;
-    }
-
-    printMatrix2Dims(A, 4, 4);
-
-    multiplyMatrixVector(A, V, out);
-
-    multiplyMatrixVectorCSR(V, out, csr_row_ptr, csr_col);
-
-    printMatrixH(V, 4, "V");
-    printMatrixH(out, 4, "out");
-    // for (int i = 0; i < 4; i++) {
-    // printf("%u ", out[i]);
-    // }
-    printf("\n");
-
     timerStart();
-    triangles = triangleCountV3OpenMP(N, csr_row_ptr, csr_col, c3);
+    // triangles = triangleCountV3OpenMP(N, csr_row_ptr, csr_col, c3);
+    triangleCountV4(N, c3, csr_row_ptr, csr_col, csc_col_ptr, csc_row);
     timerEnd();
     timerPrint((char *)"v3-openmp");
 
+    for (int i = 0; i < N; i++) {
+        triangles += c3[i];
+    }
+
     printf("Triangles: %u\n", triangles);
-    // printMatrixV(c3, N, (char *)"c3");
+    printMatrixV(c3, N, (char *)"c3");
 
     return 0;
 }
