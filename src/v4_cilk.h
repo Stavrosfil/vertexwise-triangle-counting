@@ -1,5 +1,8 @@
+#include <stdint.h>
 #include <stdio.h>
-#include <omp.h>
+#include <cilk/cilk.h>
+#include <cilk/reducer_opadd.h> //needs to be included to use the addition reducer
+#include <cilk/cilk_api.h>
 
 uint32_t multiplyRowCol(
     uint32_t row, uint32_t col, uint32_t *csr_row_ptr, uint32_t *csr_col, uint32_t *csc_col_ptr, uint32_t *csc_row) {
@@ -25,8 +28,8 @@ uint32_t multiplyRowCol(
 
 void triangleCountV4(
     uint32_t N, uint32_t *c3, uint32_t *csr_row_ptr, uint32_t *csr_col, uint32_t *csc_col_ptr, uint32_t *csc_row) {
-#pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < N; i++) {
+
+    cilk_for(int i = 0; i < N; i++) {
         uint32_t ans = 0;
         for (int j = csr_row_ptr[i]; j < csr_row_ptr[i + 1]; j++) {
             ans += multiplyRowCol(i, csr_col[j], csr_row_ptr, csr_col, csc_col_ptr, csc_row);
