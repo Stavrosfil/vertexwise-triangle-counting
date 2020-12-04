@@ -92,18 +92,20 @@ int main(int argc, char *argv[]) {
     printMatrixH(csr_row_ptr, N + 1, (char *)"csr_row_ptr");
 
     /* ----------------------------------- V3 ----------------------------------- */
-
     uint32_t triangles = 0;
 
-    timerStart();
-    triangleCountV3(N, c3, csr_row_ptr, csr_col);
-    timerEnd();
-    timerPrint((char *)"v3");
+    if (FRAMEWORK != 3) {
 
-    for (int i = 0; i < N; i++)
-        triangles += c3[i];
-    printf("Triangles: %u\n", triangles / 3);
-    // printMatrixV(c3, N, (char *)"c3");
+        timerStart();
+        triangleCountV3(N, c3, csr_row_ptr, csr_col);
+        timerEnd();
+        timerPrint((char *)"v3");
+
+        for (int i = 0; i < N; i++)
+            triangles += c3[i];
+        printf("Triangles: %u\n", triangles / 3);
+        // printMatrixV(c3, N, (char *)"c3");
+    }
 
     /* ----------------------------------- V4 ----------------------------------- */
 

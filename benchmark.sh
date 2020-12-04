@@ -5,8 +5,6 @@
 #SBATCH --ntasks=20
 #SBATCH --time=00:10:00
 
-# module load OpenCilk
-
 thread_nums=(1 2 4 8 16 20)
 # thread_nums=(4 8)
 datasets=("belgium_osm.mtx" "com-Youtube.mtx" "mycielskian13.mtx" "dblp-2010.mtx" "NACA0015.mtx")
@@ -33,6 +31,15 @@ for i in 1 2 3; do
     echo "#define FRAMEWORK ${i}" >./include/framework.h
     printf "\n==============================================================\n"
     printf "\n[Framework] %s" "${make_options[$i]}"
+
+    if [ ${make_options[$i]} == "cilk" ]; then
+        module purge gcc
+        module load OpenCilk
+    else
+        module purge OpenCilk
+        module load gcc
+    fi
+
     make ${make_options[$i]}
     sweep_files_threads
 done
