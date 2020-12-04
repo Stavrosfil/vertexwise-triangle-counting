@@ -1,7 +1,5 @@
-#include <cstdio>
-#include <iostream>
+#include <stdio.h>
 #include <stdlib.h>
-#include <vector>
 
 // #define DEBUG
 // #define filepath "data/as-Skitter.mtx"
@@ -24,29 +22,28 @@
 
 // #include "../include/v1.h"
 // #include "../include/v2.h"
+#if !defined(FRAMEWORK)
+#define FRAMEWORK 0
+#endif
 
-#define openmp
-
-#ifdef serial
+#if FRAMEWORK == 0
 #include "../include/v3.h"
 #include "../include/v4.h"
 #endif
 
-#ifdef openmp
+#if FRAMEWORK == 1
 #include "../include/v3_openmp.h"
 #include "../include/v4_openmp.h"
 #endif
 
-#ifdef cilk
+#if FRAMEWORK == 2
 #include "../include/v3_cilk.h"
 #include "../include/v4_cilk.h"
 #endif
 
-#ifdef pthreads
+#if FRAMEWORK == 3
 #include "../include/v4_pthreads.h"
 #endif
-
-using namespace std;
 
 int main(int argc, char *argv[]) {
 
@@ -77,6 +74,7 @@ int main(int argc, char *argv[]) {
     uint32_t *J           = (uint32_t *)malloc(nz * sizeof(uint32_t));
     uint32_t *csr_col     = (uint32_t *)malloc(nz * sizeof(uint32_t));
     uint32_t *csr_row_ptr = (uint32_t *)malloc((N + 1) * sizeof(uint32_t));
+    uint32_t *c           = (uint32_t *)calloc(N, sizeof(uint32_t));
     uint32_t *c3          = (uint32_t *)calloc(N, sizeof(uint32_t));
     uint32_t isOneBased   = 1;
 
@@ -101,8 +99,9 @@ int main(int argc, char *argv[]) {
     printMatrixH(csc_row, nz, (char *)"csc_row");
     printMatrixH(csc_col_ptr, N + 1, (char *)"csc_col_ptr");
 
+    /* ----------------------------------- V3 ----------------------------------- */
+
     uint32_t triangles = 0;
-    // printMatrixV(c3, N, (char *)"c3");
 
     timerStart();
     triangleCountV3(N, c3, csr_row_ptr, csr_col);
@@ -112,14 +111,19 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < N; i++)
         triangles += c3[i];
     printf("Triangles: %u\n", triangles / 3);
+    // printMatrixV(c3, N, (char *)"c3");
+
+    /* ----------------------------------- V4 ----------------------------------- */
+
+    triangles = 0;
 
     timerStart();
-    triangleCountV4(N, c3, csr_row_ptr, csr_col, num_threads);
+    triangleCountV4(N, c, csr_row_ptr, csr_col, num_threads);
     timerEnd();
     timerPrint((char *)"v4");
 
     for (int i = 0; i < N; i++)
-        triangles += c3[i];
+        triangles += c[i];
     printf("Triangles: %u\n", triangles / 3);
 
     return 0;
