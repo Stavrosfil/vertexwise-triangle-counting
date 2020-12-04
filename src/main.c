@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <string.h>
+
 // #define DEBUG
 // #define filepath "data/as-Skitter.mtx"
 // #define filepath "data/belgium_osm.mtx"
@@ -48,13 +53,18 @@ int main(int argc, char *argv[]) {
 
     int M, N, nz, num_threads = 8;
     FILE *f;
-    char *filepath;
+    char *filepath, *session;
+    uint32_t triangles = 0;
 
     if (argc == 2) {
         filepath = argv[1];
     } else if (argc == 3) {
         filepath    = argv[1];
         num_threads = atoi(argv[2]);
+    } else if (argc == 4) {
+        filepath    = argv[1];
+        num_threads = atoi(argv[2]);
+        session     = argv[3];
     }
 
     if ((f = fopen(filepath, "r")) == NULL) {
@@ -91,21 +101,35 @@ int main(int argc, char *argv[]) {
     printMatrixH(csr_col, nz, (char *)"csr_col");
     printMatrixH(csr_row_ptr, N + 1, (char *)"csr_row_ptr");
 
-    /* ----------------------------------- V3 ----------------------------------- */
-    uint32_t triangles = 0;
+    /* ------------------------------ Save results ------------------------------ */
 
-    if (FRAMEWORK != 3) {
+    char *libraries[] = {"serial", "openmp", "cilk", "pthreads"};
+    char *resultsPath = "./results/results.csv";
+    FILE *fp;
 
-        timerStart();
-        triangleCountV3(N, c3, csr_row_ptr, csr_col);
-        timerEnd();
-        timerPrint((char *)"v3");
-
-        for (int i = 0; i < N; i++)
-            triangles += c3[i];
-        printf("Triangles: %u\n", triangles / 3);
-        // printMatrixV(c3, N, (char *)"c3");
+    if ((fp = fopen(resultsPath, "a+")) == NULL) {
+        printf("File does not exist.\nExiting...");
+        exit(1);
     }
+
+    /* ----------------------------------- V3 ----------------------------------- */
+
+#if FRAMEWORK != 3
+
+    timerStart();
+    triangleCountV3(N, c3, csr_row_ptr, csr_col);
+    timerEnd();
+    timerPrint((char *)"v3");
+
+    for (int i = 0; i < N; i++)
+        triangles += c3[i];
+    printf("Triangles: %u\n", triangles / 3);
+    // printMatrixV(c3, N, (char *)"c3");
+
+    // fprintf(fp, "version,library,threads,time");
+    fprintf(fp, "%s,%s,%s,%d,%lf\n", filepath, "v3", libraries[FRAMEWORK], num_threads, totalTime(ts_start, ts_end));
+
+#endif
 
     /* ----------------------------------- V4 ----------------------------------- */
 
@@ -120,5 +144,8 @@ int main(int argc, char *argv[]) {
         triangles += c[i];
     printf("Triangles: %u\n", triangles / 3);
 
+    fprintf(fp, "%s,%s,%s,%d,%lf\n", filepath, "v4", libraries[FRAMEWORK], num_threads, totalTime(ts_start, ts_end));
+
+    fclose(fp);
     return 0;
 }
