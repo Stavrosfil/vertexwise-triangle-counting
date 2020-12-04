@@ -16,7 +16,6 @@ void triangleCountV3(int N, uint32_t *c3, uint32_t *csr_row_ptr, uint32_t *csr_c
             for (int k = j + 1; k < colEndPrt; k++) {
                 int b = csr_col[k];
                 if (hasEdge(a, b, csr_row_ptr, csr_col)) {
-#pragma omp critical
                     c3[i]++;
                 }
             }
