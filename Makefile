@@ -1,26 +1,37 @@
 CC=g++
 MPICC=mpicc
 CILKCC=/usr/local/OpenCilk-9.0.1-Linux/bin/clang++
-CFLAGS=-O3 -w
+CFLAGS= -O3 -w
+
 BUILD_DIR=build
+SRC_DIR=src
+SOURCES := $(shell find $(SRC_DIR) -name '*.c')
+
+$(info $(shell mkdir -p $(BUILD_DIR)))
+
 
 default: all
 
-build_openmp: 
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/main src/mmio.c src/main.cpp -fopenmp
+serial: 
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/main $(SOURCES)
 
-# hello_threads:
-# 	$(CC) $(CFLAGS) -o hello_threads hello_threads.c -lpthread
+openmp: 
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/main $(SOURCES) -fopenmp
 
-# hello_mpi:
-# 	$(MPICC) $(CFLAGS) -o hello_mpi hello_mpi.c
+cilk:
+	$(CILKCC) $(CFLAGS) -o $(BUILD_DIR)/main $(SOURCES) -fopencilk
 
-build_cilk:
-	$(CILKCC) $(CFLAGS) -o $(BUILD_DIR)/main src/mmio.c src/main.cpp -fopencilk
+pthreads:
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/main $(SOURCES) -lpthread
+
+mpi:
+	$(MPICC) $(CFLAGS) -o $(BUILD_DIR)/main $(SOURCES) -lpthread
+
+
 
 .PHONY: clean
 
-all: build_openmp test
+all: openmp
 
 # @printf "\n** Testing pthreads\n\n"
 # ./hello_threads
@@ -33,4 +44,4 @@ test:
 	./build/main
 
 clean:
-	rm -f hello_openmp hello_mpi hello_cilk hello_threads 
+	rm -rf $(BUILD_DIR)
