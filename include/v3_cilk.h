@@ -1,7 +1,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <math.h>
+
+#ifndef matrixFunctions
+#define matrixFunctions
 #include "../include/matrixFunctions.h"
+#endif
 
 #include <cilk/cilk.h>
 #include <cilk/reducer_opadd.h>

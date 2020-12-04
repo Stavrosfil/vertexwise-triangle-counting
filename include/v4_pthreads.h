@@ -1,9 +1,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "pthread.h"
-#include "../include/matrixFunctions.h"
 
-#define NUM_THREADS 8
+#ifndef matrixFunctions
+#define matrixFunctions
+#include "../include/matrixFunctions.h"
+#endif
 
 pthread_mutex_t lock;
 uint32_t iteration = 0;
@@ -30,9 +32,9 @@ void *multiplyMatrixVector(void *args) {
     pthread_exit(NULL);
 }
 
-void triangleCountV4(uint32_t N, uint32_t *c, uint32_t *csr_row_ptr, uint32_t *csr_col) {
+void triangleCountV4(uint32_t N, uint32_t *c, uint32_t *csr_row_ptr, uint32_t *csr_col, uint32_t num_threads) {
 
-    pthread_t threads[NUM_THREADS];
+    pthread_t threads[num_threads];
     struct data thread_data;
 
     thread_data.N           = N;
@@ -40,9 +42,9 @@ void triangleCountV4(uint32_t N, uint32_t *c, uint32_t *csr_row_ptr, uint32_t *c
     thread_data.csr_row_ptr = csr_row_ptr;
     thread_data.csr_col     = csr_col;
 
-    for (int i = 0; i < NUM_THREADS; i++)
+    for (int i = 0; i < num_threads; i++)
         pthread_create(&threads[i], NULL, multiplyMatrixVector, &thread_data);
 
-    for (int i = 0; i < NUM_THREADS; i++)
+    for (int i = 0; i < num_threads; i++)
         pthread_join(threads[i], NULL);
 }

@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <omp.h>
-#include "../include/matrixFunctions.h"
 
-void triangleCountV4(uint32_t N, uint32_t *c, uint32_t *csr_row_ptr, uint32_t *csr_col) {
+#ifndef matrixFunctions
+#define matrixFunctions
+#include "../include/matrixFunctions.h"
+#endif
+
+void triangleCountV4(uint32_t N, uint32_t *c, uint32_t *csr_row_ptr, uint32_t *csr_col, uint32_t num_threads) {
 
 #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < N; i++) {

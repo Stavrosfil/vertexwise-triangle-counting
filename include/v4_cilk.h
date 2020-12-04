@@ -3,9 +3,13 @@
 #include <cilk/cilk.h>
 #include <cilk/reducer_opadd.h> //needs to be included to use the addition reducer
 #include <cilk/cilk_api.h>
-#include "../include/matrixFunctions.h"
 
-void triangleCountV4(uint32_t N, uint32_t *c, uint32_t *csr_row_ptr, uint32_t *csr_col) {
+#ifndef matrixFunctions
+#define matrixFunctions
+#include "../include/matrixFunctions.h"
+#endif
+
+void triangleCountV4(uint32_t N, uint32_t *c, uint32_t *csr_row_ptr, uint32_t *csr_col, uint32_t num_threads) {
 
     cilk_for(int i = 0; i < N; i++) {
         for (int j = csr_row_ptr[i]; j < csr_row_ptr[i + 1]; j++)
