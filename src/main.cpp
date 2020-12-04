@@ -4,16 +4,16 @@
 #include <vector>
 
 // #define DEBUG
-// #define FILEPATH "data/as-Skitter.mtx"
-#define FILEPATH "data/belgium_osm.mtx"
-// #define FILEPATH "data/ca-AstroPh.mtx"
-// #define FILEPATH "data/ca-GrQc.mtx"
-#define FILEPATH "data/com-Youtube.mtx"
-// #define FILEPATH "data/dblp-2010.mtx"
-// #define FILEPATH "data/delaunay_n19.mtx"
-// #define FILEPATH "data/roadNet-CA.mtx"
-// #define FILEPATH "data/smalltest.mtx"
-// #define FILEPATH "data/testmatrix.mtx"
+// #define filepath "data/as-Skitter.mtx"
+// #define filepath "data/belgium_osm.mtx"
+// #define filepath "data/ca-AstroPh.mtx"
+// #define filepath "data/ca-GrQc.mtx"
+// #define filepath "data/com-Youtube.mtx"
+// #define filepath "data/dblp-2010.mtx"
+// #define filepath "data/delaunay_n19.mtx"
+// #define filepath "data/roadNet-CA.mtx"
+// #define filepath "data/smalltest.mtx"
+// #define filepath "data/testmatrix.mtx"
 
 #include "../include/defs.h"
 
@@ -22,27 +22,46 @@
 #include "../include/helpers.h"
 #include "../include/timerHelpers.h"
 
-#include "../include/v1.h"
-#include "../include/v2.h"
-#include "../include/v3_openmp.h"
-// #include "../include/v3.h"
-// #include "../include/v3_cilk.h"
+// #include "../include/v1.h"
+// #include "../include/v2.h"
 
-// #include "../include/multiplication.h"
+#define openmp
+
+#ifdef serial
+#include "../include/v3.h"
 #include "../include/v4.h"
-// #include "../include/v4_openmp.h"
-// #include "../include/v4_cilk.h"
-// #include "../include/v4_pthreads.h"
+#endif
+
+#ifdef openmp
+#include "../include/v3_openmp.h"
+#include "../include/v4_openmp.h"
+#endif
+
+#ifdef cilk
+#include "../include/v3_cilk.h"
+#include "../include/v4_cilk.h"
+#endif
+
+#ifdef pthreads
+#include "../include/v4_pthreads.h"
+#endif
 
 using namespace std;
 
-int main() {
+int main(int argc, char *argv[]) {
 
-    int M, N, nz;
-
+    int M, N, nz, num_threads = 8;
     FILE *f;
+    char *filepath;
 
-    if ((f = fopen(FILEPATH, "r")) == NULL) {
+    if (argc == 2) {
+        filepath = argv[1];
+    } else if (argc == 3) {
+        filepath    = argv[1];
+        num_threads = atoi(argv[2]);
+    }
+
+    if ((f = fopen(filepath, "r")) == NULL) {
         printf("File does not exist.\nExiting...");
         exit(1);
     }
@@ -83,20 +102,25 @@ int main() {
     printMatrixH(csc_col_ptr, N + 1, (char *)"csc_col_ptr");
 
     uint32_t triangles = 0;
+    // printMatrixV(c3, N, (char *)"c3");
 
     timerStart();
-    // triangles = triangleCountV3OpenMP(N, csr_row_ptr, csr_col, c3);
-    // triangleCountV4(N, c3, csr_row_ptr, csr_col);
-    triangleCountV4(N, c3, csr_row_ptr, csr_col, csc_col_ptr, csc_row);
+    triangleCountV3(N, c3, csr_row_ptr, csr_col);
     timerEnd();
-    timerPrint((char *)"v3-openmp");
+    timerPrint((char *)"v3");
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
         triangles += c3[i];
-    }
-
     printf("Triangles: %u\n", triangles / 3);
-    printMatrixV(c3, N, (char *)"c3");
+
+    timerStart();
+    triangleCountV4(N, c3, csr_row_ptr, csr_col, num_threads);
+    timerEnd();
+    timerPrint((char *)"v4");
+
+    for (int i = 0; i < N; i++)
+        triangles += c3[i];
+    printf("Triangles: %u\n", triangles / 3);
 
     return 0;
 }
