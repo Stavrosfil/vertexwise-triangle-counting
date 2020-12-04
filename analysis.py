@@ -27,48 +27,56 @@ v3 = df[df["version"] == "v3"]
 v4 = df[df["version"] == "v4"]
 # v4 = df[df["version"] == "v4"].loc[:, ["dataset", "library", "threads", "time", "speedup"]]
 
-datasets = df.dataset.unique()
-libraries = df.library.unique()
-threads = df.threads.unique()
+versions = [v3, v4]
 
-for dataset_name in datasets:
-    d = v3[v3.dataset == dataset_name]
-    baseline_time = d[d.threads == 1].time.mean()
-    print(f"Baseline time: {baseline_time}")
+# print(libraries)
 
-    for i in d.index:
-        if v3.loc[i].threads != 1:
-            v3.loc[i, "speedup"] = baseline_time / d.loc[i].time
-            # print(d.loc[i].speedup)
+for v in versions:
+    datasets = v.dataset.unique()
+    libraries = v.library.unique()
+    threads = v.threads.unique()
+    version = v.version.unique()[0]
 
-with sns.axes_style("whitegrid"):
-    fig, ax = plt.subplots(figsize=(20, 10))
-    ax.set(
-        xlabel="Threads (n)",
-        ylabel="Speedup (x)",
-        title="Speedup",
-    )
+    for library in libraries:
+        for dataset_name in datasets:
+            d = v[(v.dataset == dataset_name) & (v.library == library)]
 
-    ax.set_xticks(threads)
-    # ax.set_xlim((min(threads), max(threads)))
-    # ax.set_xticks(np.arange(0, max(threads) + 1, 1))
-    # ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: x if x in threads else None))
+            baseline_time = d[d.threads == 1].time.mean()
+            # print(f"Baseline time: {baseline_time}")
 
-    sns.lineplot(
-        data=v3,
-        x="threads",
-        y="speedup",
-        hue="dataset",
-        style="dataset",
-        markers=True,
-        markersize=10,
-        linewidth=2.5,
-        ci=25,
-        # err_style="bars",
-        # marker="o",
-    )
-    # fig.legend(
-    #     labels=[
-    #         "test",
-    #     ]
-    # )
+            for i in d.index:
+                if v.loc[i].threads != 1:
+                    v.loc[i, "speedup"] = baseline_time / d.loc[i].time
+
+        with sns.axes_style("whitegrid"):
+            fig, ax = plt.subplots(figsize=(20, 10))
+            ax.set(
+                xlabel="Threads (n)",
+                ylabel="Speedup (x)",
+                title=f"{version} using: {library}",
+            )
+
+            ax.set_xticks(threads)
+            # ax.set_xlim((min(threads), max(threads)))
+            # ax.set_xticks(np.arange(0, max(threads) + 1, 1))
+            # ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: x if x in threads else None))
+
+            sns.lineplot(
+                data=v[v.library == library],
+                x="threads",
+                y="speedup",
+                hue="dataset",
+                style="dataset",
+                markers=True,
+                markersize=10,
+                linewidth=2.5,
+                # ci=25,
+                # err_style="bars",
+                # marker="o",
+            )
+            fig.savefig(f"./results/figures/{version}_{library}.png")
+            # fig.legend(
+            #     labels=[
+            #         "test",
+            #     ]
+            # )
