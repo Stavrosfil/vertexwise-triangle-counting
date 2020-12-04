@@ -22,9 +22,8 @@
 
 // #include "../include/v1.h"
 // #include "../include/v2.h"
-#if !defined(FRAMEWORK)
-#define FRAMEWORK 0
-#endif
+
+#include "../include/framework.h"
 
 #if FRAMEWORK == 0
 #include "../include/v3.h"
@@ -78,9 +77,6 @@ int main(int argc, char *argv[]) {
     uint32_t *c3          = (uint32_t *)calloc(N, sizeof(uint32_t));
     uint32_t isOneBased   = 1;
 
-    uint32_t *csc_row     = (uint32_t *)malloc(nz * sizeof(uint32_t));
-    uint32_t *csc_col_ptr = (uint32_t *)malloc((N + 1) * sizeof(uint32_t));
-
     for (int i = 0; i < nz; i++) {
         fscanf(f, "%d %d\n", &I[i], &J[i]);
         I[i + 1] = J[i];
@@ -89,15 +85,11 @@ int main(int argc, char *argv[]) {
     }
 
     coo2csc(csr_col, csr_row_ptr, I, J, nz, N, isOneBased);
-    coo2csc(csc_row, csc_col_ptr, J, I, nz, N, isOneBased);
 
     printMatrixH(I, nz, (char *)"I");
     printMatrixH(J, nz, (char *)"J");
     printMatrixH(csr_col, nz, (char *)"csr_col");
     printMatrixH(csr_row_ptr, N + 1, (char *)"csr_row_ptr");
-
-    printMatrixH(csc_row, nz, (char *)"csc_row");
-    printMatrixH(csc_col_ptr, N + 1, (char *)"csc_col_ptr");
 
     /* ----------------------------------- V3 ----------------------------------- */
 

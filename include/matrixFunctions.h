@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-bool hasEdge(uint32_t a, uint32_t b, uint32_t *csr_row_ptr, uint32_t *csr_col) {
+int hasEdge(uint32_t a, uint32_t b, uint32_t *csr_row_ptr, uint32_t *csr_col) {
 
     uint32_t lo  = csr_row_ptr[a];
     uint32_t hi  = csr_row_ptr[a + 1] - 1;

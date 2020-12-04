@@ -1,6 +1,7 @@
 CC=g++
 MPICC=mpicc
 CILKCC=/usr/local/OpenCilk-9.0.1-Linux/bin/clang++
+# CILKCC=clang++
 CFLAGS= -O3 -w
 
 BUILD_DIR=build
@@ -26,8 +27,6 @@ pthreads:
 
 mpi:
 	$(MPICC) $(CFLAGS) -o $(BUILD_DIR)/main $(SOURCES) -lpthread
-
-
 
 .PHONY: clean
 
