@@ -18,7 +18,7 @@ void printMatrixV(uint32_t *a, uint32_t size, char *text) {
 }
 
 void printMatrix2Dims(void *arr, int n, int m) {
-    bool *a = (bool *)arr;
+    int *a = (int *)arr;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++)
             DEBUG_PRINT(("%d ", a[i * m + j]));
@@ -27,12 +27,12 @@ void printMatrix2Dims(void *arr, int n, int m) {
 }
 
 void initRandomGraph(void *arr, int n, int m) {
-    bool *a = (bool *)arr;
+    int *a = (int *)arr;
     srandom(time(NULL));
     for (int i = 0; i < n; i++) {
         for (int j = i + 1; j < m; j++) {
             // Check if an IF is faster (if random() & 1 => A[i][j] = 1 etc)
-            bool r       = random() & 1;
+            int r        = random() & 1;
             a[i * m + j] = r;
             a[j * m + i] = r;
         }
