@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <vector>
 
-#define DEBUG
+// #define DEBUG
 // #define FILEPATH "data/as-Skitter.mtx"
 #define FILEPATH "data/belgium_osm.mtx"
 // #define FILEPATH "data/ca-AstroPh.mtx"
@@ -13,7 +13,7 @@
 // #define FILEPATH "data/delaunay_n19.mtx"
 // #define FILEPATH "data/roadNet-CA.mtx"
 // #define FILEPATH "data/smalltest.mtx"
-#define FILEPATH "data/testmatrix.mtx"
+// #define FILEPATH "data/testmatrix.mtx"
 
 #include "../include/defs.h"
 
@@ -28,21 +28,13 @@
 // #include "../include/v3.h"
 // #include "../include/v3_cilk.h"
 
-#include "multiplication.h"
+// #include "../include/multiplication.h"
+#include "../include/v4.h"
+// #include "../include/v4_openmp.h"
+// #include "../include/v4_cilk.h"
+// #include "../include/v4_pthreads.h"
 
 using namespace std;
-
-int compare(const void *a, const void *b) {
-    int int_a = *((int *)a);
-    int int_b = *((int *)b);
-
-    if (int_a == int_b)
-        return 0;
-    else if (int_a < int_b)
-        return -1;
-    else
-        return 1;
-}
 
 int main() {
 
@@ -60,7 +52,7 @@ int main() {
     }
     DEBUG_PRINT(("M: %d, N: %d, nz: %d\n", M, N, nz));
 
-    // nz *= 2;
+    nz *= 2;
 
     uint32_t *I           = (uint32_t *)malloc(nz * sizeof(uint32_t));
     uint32_t *J           = (uint32_t *)malloc(nz * sizeof(uint32_t));
@@ -74,30 +66,13 @@ int main() {
 
     for (int i = 0; i < nz; i++) {
         fscanf(f, "%d %d\n", &I[i], &J[i]);
-        // I[i + 1] = J[i];
-        // J[i + 1] = I[i];
-        // i++;
+        I[i + 1] = J[i];
+        J[i + 1] = I[i];
+        i++;
     }
 
     coo2csc(csr_col, csr_row_ptr, I, J, nz, N, isOneBased);
     coo2csc(csc_row, csc_col_ptr, J, I, nz, N, isOneBased);
-
-    // for (int i = 0; i < N; i++) {
-    // qsort((csr_col + csr_row_ptr[i]), csr_row_ptr[i + 1] - csr_row_ptr[i], sizeof(uint32_t), compare);
-    // qsort((csc_row + csc_col_ptr[i]), csc_col_ptr[i + 1] - csc_col_ptr[i], sizeof(uint32_t), compare);
-    // }
-    // int ccc = 0;
-    // for (int i = 0; i < N; i++) {
-    //     printf("%d -> ", i);
-    //     for (int j = csr_row_ptr[i]; j < csr_row_ptr[i + 1]; j++) {
-    //         // if (csr_col[j] < i) {
-    //         printf("%d ", csr_col[j]);
-    //         ccc++;
-    //         // }
-    //     }
-    //     printf("\n");
-    // }
-    // printf("%d\n", ccc);
 
     printMatrixH(I, nz, (char *)"I");
     printMatrixH(J, nz, (char *)"J");
@@ -111,6 +86,7 @@ int main() {
 
     timerStart();
     // triangles = triangleCountV3OpenMP(N, csr_row_ptr, csr_col, c3);
+    // triangleCountV4(N, c3, csr_row_ptr, csr_col);
     triangleCountV4(N, c3, csr_row_ptr, csr_col, csc_col_ptr, csc_row);
     timerEnd();
     timerPrint((char *)"v3-openmp");
@@ -119,7 +95,7 @@ int main() {
         triangles += c3[i];
     }
 
-    printf("Triangles: %u\n", triangles);
+    printf("Triangles: %u\n", triangles / 3);
     printMatrixV(c3, N, (char *)"c3");
 
     return 0;
